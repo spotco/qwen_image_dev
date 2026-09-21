@@ -22,9 +22,9 @@ The project uses the official Comfy-Org Qwen Image 2.1 INT8 ConvRot transformer,
 
 The launcher intentionally does not use `--lowvram`, `--highvram`, `--gpu-only`, or `--disable-smart-memory`. It reserves 1 GB of VRAM for the desktop and enables DynamicVRAM with two async offload streams.
 
-## Model files
+## Fresh-clone setup
 
-See [MODEL_DOWNLOADS.md](MODEL_DOWNLOADS.md). Model binaries and the local ComfyUI installation are ignored by Git.
+See [DOWNLOAD_SETUP.md](DOWNLOAD_SETUP.md) for the complete setup: official project and binary links, PowerShell download commands, model destinations, launcher settings, validation, and troubleshooting. Model binaries and the local ComfyUI installation are ignored by Git.
 
 ## Updating ComfyUI
 
