@@ -1,6 +1,6 @@
 # Local ComfyUI installations and generated state.
 ComfyUI_source/
-ComfyUI_windows_portable/
+python_embeded/
 _rollback/
 input/
 output/

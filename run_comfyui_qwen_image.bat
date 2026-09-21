@@ -1,9 +1,8 @@
 @echo off
 setlocal
 
-set "PORTABLE_ROOT=%~dp0ComfyUI_windows_portable"
 set "COMFY_ROOT=%~dp0ComfyUI_source"
-set "COMFY_PYTHON=%PORTABLE_ROOT%\python_embeded\python.exe"
+set "COMFY_PYTHON=%~dp0python_embeded\python.exe"
 
 if not exist "%COMFY_PYTHON%" (
     echo ComfyUI portable Python was not found:

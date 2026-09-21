@@ -14,7 +14,11 @@ qwen_image_dev\
 ├── README.md
 ├── .gitignore
 ├── run_comfyui_qwen_image.bat
-└── qwen21_text_to_image_workflow.json
+├── qwen21_text_to_image_workflow.json
+├── qwen21_image_modification_workflow.json
+├── qwen21_image_combine_workflow.json
+├── qwen21_inpainting_workflow.json
+└── qwen21_background_removal_workflow.json
 ```
 
 The large runtime and model files are downloaded locally and are deliberately not committed or stored with Git LFS:
@@ -25,13 +29,13 @@ qwen_image_dev\
 │   └── models\
 │       ├── diffusion_models\        # Qwen Image transformer
 │       ├── text_encoders\           # Qwen3-VL text encoder
-│       └── vae\                     # Qwen Image VAE
-└── ComfyUI_windows_portable\        # embedded Python/CUDA runtime
-    └── python_embeded\
-        └── python.exe
+│       ├── vae\                     # Qwen Image VAE
+│       └── background_removal\      # BiRefNet alpha-mask model
+└── python_embeded\                  # embedded Python/CUDA runtime
+    └── python.exe
 ```
 
-The launcher intentionally runs the source checkout with the portable build's embedded Python. The source checkout is required because the Qwen Image 2.1 nodes are provided by current native ComfyUI support.
+The launcher intentionally runs the source checkout with the root-level embedded Python. The source checkout is required because the Qwen Image 2.1 nodes are provided by current native ComfyUI support.
 
 ### Official project links
 
@@ -57,6 +61,7 @@ This setup uses:
 - `qwen_image_2.1_int8_convrot.safetensors`: INT8 ConvRot diffusion transformer
 - `qwen3vl_8b_w4a8.safetensors`: Qwen3-VL 8B W4A8 text encoder
 - `qwen_image_2.1_vae_bf16.safetensors`: matching BF16 VAE
+- `birefnet.safetensors`: official ComfyUI BiRefNet model used by the native background-removal workflow
 - 1024x1024, 25 steps, batch size 1
 - DynamicVRAM and two-stream asynchronous offload
 
@@ -72,7 +77,7 @@ For this 8188 MiB GPU, aim for at least **6 GiB free**, preferably **7 GiB or mo
 
 ## 3. Fresh-clone installation
 
-Use a local SSD if possible. The three model files occupy roughly 14 GB, and the ComfyUI runtime/source checkout needs additional space.
+Use a local SSD if possible. The three Qwen model files occupy roughly 14 GB; BiRefNet adds roughly 0.4 GB, and the ComfyUI runtime/source checkout needs additional space.
 
 ### 3.1 Clone this project
 
@@ -105,10 +110,16 @@ Extract it with 7-Zip. This command assumes the normal 7-Zip installation path:
 & 'C:\Program Files\7-Zip\7z.exe' x .\ComfyUI_windows_portable_nvidia.7z '-o.' -y
 ```
 
-If 7-Zip is installed elsewhere, use its `7z.exe` path. The extracted directory must be:
+If 7-Zip is installed elsewhere, use its `7z.exe` path. Move the embedded runtime out of the archive wrapper:
+
+```powershell
+Move-Item .\ComfyUI_windows_portable\python_embeded .\python_embeded
+```
+
+The active runtime must then be:
 
 ```text
-E:\qwen_image_dev\ComfyUI_windows_portable\python_embeded\python.exe
+E:\qwen_image_dev\python_embeded\python.exe
 ```
 
 Do not place the archive, extracted runtime, or model files inside the Git repository's tracked history. They are ignored by `.gitignore`.
@@ -124,7 +135,7 @@ git clone https://github.com/Comfy-Org/ComfyUI.git .\ComfyUI_source
 Install/update dependencies using the embedded Python from the portable runtime:
 
 ```powershell
-$py = (Resolve-Path .\ComfyUI_windows_portable\python_embeded\python.exe).Path
+$py = (Resolve-Path .\python_embeded\python.exe).Path
 & $py -m pip install -r .\ComfyUI_source\requirements.txt
 ```
 
@@ -161,6 +172,10 @@ $downloads = @(
     [pscustomobject]@{
         Url = 'https://huggingface.co/Comfy-Org/Qwen-Image-2.1/resolve/main/vae/qwen_image_2.1_vae_bf16.safetensors'
         Path = '.\ComfyUI_source\models\vae\qwen_image_2.1_vae_bf16.safetensors'
+    },
+    [pscustomobject]@{
+        Url = 'https://huggingface.co/Comfy-Org/BiRefNet/resolve/main/background_removal/birefnet.safetensors'
+        Path = '.\ComfyUI_source\models\background_removal\birefnet.safetensors'
     }
 )
 
@@ -180,17 +195,34 @@ The exact files, source URLs, and destinations are:
 | `qwen_image_2.1_int8_convrot.safetensors` | <https://huggingface.co/Comfy-Org/Qwen-Image-2.1/resolve/main/diffusion_models/qwen_image_2.1_int8_convrot.safetensors> | `ComfyUI_source\models\diffusion_models` |
 | `qwen3vl_8b_w4a8.safetensors` | <https://huggingface.co/Comfy-Org/Qwen-Image-2.1/resolve/main/text_encoders/qwen3vl_8b_w4a8.safetensors> | `ComfyUI_source\models\text_encoders` |
 | `qwen_image_2.1_vae_bf16.safetensors` | <https://huggingface.co/Comfy-Org/Qwen-Image-2.1/resolve/main/vae/qwen_image_2.1_vae_bf16.safetensors> | `ComfyUI_source\models\vae` |
+| `birefnet.safetensors` | <https://huggingface.co/Comfy-Org/BiRefNet/resolve/main/background_removal/birefnet.safetensors> | `ComfyUI_source\models\background_removal` |
 
 Verify names and nonzero sizes:
 
 ```powershell
 Get-ChildItem .\ComfyUI_source\models\diffusion_models, .\ComfyUI_source\models\text_encoders, .\ComfyUI_source\models\vae -File |
     Select-Object FullName, Length
+Get-ChildItem .\ComfyUI_source\models\background_removal\birefnet.safetensors |
+    Select-Object FullName, Length
 ```
 
-Approximate sizes are 7.3 GB for the transformer, 6.3 GB for the W4A8 text encoder, and 0.7 GB for the VAE. Do not substitute `qwen3vl_8b_int8_convrot.safetensors` for the W4A8 file in this 8 GB configuration.
+Approximate sizes are 7.3 GB for the transformer, 6.3 GB for the W4A8 text encoder, 0.7 GB for the VAE, and 0.4 GB for BiRefNet. Do not substitute `qwen3vl_8b_int8_convrot.safetensors` for the W4A8 file in this 8 GB configuration.
 
-## 5. Launching ComfyUI
+BiRefNet is only loaded by `qwen21_background_removal_workflow.json`; it is not required for text-to-image, image modification, image combining, or mask-guided inpainting.
+
+## 5. Workflow files and local inputs
+
+The repository includes five importable workflow JSONs:
+
+- `qwen21_text_to_image_workflow.json`: baseline text-to-image.
+- `qwen21_image_modification_workflow.json`: edit `qwen21_edit_source.png` with text and an optional second reference.
+- `qwen21_image_combine_workflow.json`: combine `qwen21_combine_base.png` and `qwen21_combine_subject.png`; prompts use `<image1>` and `<image2>`.
+- `qwen21_inpainting_workflow.json`: edit `qwen21_inpaint_source.png` and composite only the white region of `qwen21_inpaint_mask.png` over the original.
+- `qwen21_background_removal_workflow.json`: remove the background with BiRefNet and save an RGBA PNG.
+
+Load a JSON into ComfyUI by opening it from the Workflows menu or dragging it onto the ComfyUI page. The sample input names are only defaults; replace the `LoadImage` or `LoadImageMask` node values with your own files under `ComfyUI_source\input`.
+
+## 6. Launching ComfyUI
 
 The project launcher is:
 
@@ -234,7 +266,7 @@ The small Python wrapper inside the batch file puts `ComfyUI_source` first on `s
 
 Do not run a raw full-BF16, GPU-only Qwen Image setup on this GPU. The intended setup is quantized inference with model streaming.
 
-## 6. First workflow and validation
+## 7. First workflow and validation
 
 1. Close `llama-server`, games, browsers using GPU acceleration, and any other local model server.
 2. Run the `nvidia-smi` command above and confirm at least 6 GiB free, preferably 7 GiB.
@@ -255,7 +287,7 @@ nvidia-smi --query-gpu=name,memory.used,memory.free,utilization.gpu --format=csv
 
 The expected result is that the nodes load, the first run takes longer while the large files are loaded/offloaded, and peak VRAM stays below the 8 GB limit. System RAM will be used heavily; that is expected for this configuration.
 
-## 7. Performance expectations
+## 8. Performance expectations
 
 This is runnable on an 8 GB RTX 4060 Laptop GPU, but it is not a fast, fully resident setup.
 
@@ -265,7 +297,7 @@ This is runnable on an 8 GB RTX 4060 Laptop GPU, but it is not a fast, fully res
 - 1024x1024 / 25 steps / batch 1: expect minutes rather than seconds. A practical first-run range is roughly 2-8 minutes, with the exact result depending strongly on laptop power mode, thermals, PyTorch build, and offload behavior.
 - INT8 vs INT4: use the official INT8 ConvRot transformer plus W4A8 text encoder first. Move to a compatible INT4 variant only if the official workflow/model card supports it and INT8 cannot fit; lower precision can trade image quality and compatibility for memory savings.
 
-## 8. Updating the setup
+## 9. Updating the setup
 
 Update the project documentation/workflow normally:
 
@@ -277,20 +309,20 @@ Update the separate ComfyUI checkout and its embedded-Python dependencies:
 
 ```powershell
 git -C .\ComfyUI_source pull --ff-only
-$py = (Resolve-Path .\ComfyUI_windows_portable\python_embeded\python.exe).Path
+$py = (Resolve-Path .\python_embeded\python.exe).Path
 & $py -m pip install -r .\ComfyUI_source\requirements.txt
 ```
 
 After a ComfyUI update, re-run the validation steps and confirm the Qwen nodes are still present. Do not run `pip` using a different system Python and expect the embedded runtime to use those packages.
 
-## 9. Troubleshooting
+## 10. Troubleshooting
 
 ### ComfyUI does not start or `main.py` is missing
 
 Check the two paths expected by the launcher:
 
 ```powershell
-Test-Path .\ComfyUI_windows_portable\python_embeded\python.exe
+Test-Path .\python_embeded\python.exe
 Test-Path .\ComfyUI_source\main.py
 ```
 
@@ -327,7 +359,7 @@ If free VRAM is not close to 6-7 GiB, do not start the test yet. If it is free a
 Use the embedded Python check in Section 3.3. If it reports CUDA unavailable, a different Python is being used, or the portable runtime is damaged, reinstall/extract a fresh official NVIDIA portable archive and run:
 
 ```powershell
-$py = (Resolve-Path .\ComfyUI_windows_portable\python_embeded\python.exe).Path
+$py = (Resolve-Path .\python_embeded\python.exe).Path
 & $py -m pip install -r .\ComfyUI_source\requirements.txt
 ```
 
@@ -339,9 +371,9 @@ Keep all model files and the Windows pagefile on an SSD, close unnecessary appli
 
 ### ComfyUI cannot see files after moving the project
 
-The launcher passes `--base-directory ComfyUI_source`, so model discovery is relative to that source checkout. Keep `ComfyUI_source` and `ComfyUI_windows_portable` beside the launcher, or update the launcher paths if deliberately relocating them.
+The launcher passes `--base-directory ComfyUI_source`, so model discovery is relative to that source checkout. Keep `ComfyUI_source` and `python_embeded` beside the launcher, or update the launcher paths if deliberately relocating them.
 
-## 10. Git and large-file policy
+## 11. Git and large-file policy
 
 This repository does not use Git LFS. The `.gitignore` excludes:
 
