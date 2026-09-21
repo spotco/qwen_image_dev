@@ -1,7 +1,7 @@
 # Qwen Image 2.1 Workflow Pack Plan
 
 Date: 2026-09-21
-Status: Validation complete; documentation and commit pending
+Status: Implemented; validated and pushed
 Branch: `main`
 Scope: one implementation day
 
@@ -19,7 +19,7 @@ Scope: one implementation day
 - [x] Step 10 - Load and validate all four workflows through ComfyUI in Brave
 - [x] Step 11 - Confirm outputs, model selection, VRAM behavior, and saved files
 - [x] Step 12 - Update documentation with usage instructions and validation results
-- [ ] Step 13 - Commit and push the completed workflow pack
+- [x] Step 13 - Commit and push the completed workflow pack
 
 ## Objective
 
