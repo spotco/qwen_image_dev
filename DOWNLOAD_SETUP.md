@@ -212,13 +212,20 @@ BiRefNet is only loaded by `qwen21_background_removal_workflow.json`; it is not 
 
 ## 5. Workflow files and local inputs
 
-The repository includes five importable workflow JSONs:
+The repository includes six importable workflow JSONs:
 
 - `qwen21_text_to_image_workflow.json`: baseline text-to-image.
 - `qwen21_image_modification_workflow.json`: edit `qwen21_edit_source.png` with text and an optional second reference.
 - `qwen21_image_combine_workflow.json`: combine `qwen21_combine_base.png` and `qwen21_combine_subject.png`; prompts use `<image1>` and `<image2>`.
 - `qwen21_inpainting_workflow.json`: edit `qwen21_inpaint_source.png` and composite only the white region of `qwen21_inpaint_mask.png` over the original.
 - `qwen21_background_removal_workflow.json`: remove the background with BiRefNet and save an RGBA PNG.
+- `qwen21_style_transfer_workflow.json`: use `qwen21_style_transfer_source.png` as `image1` and the official Studio Ghibli watercolor reference below as `image2`; the prompt transfers visual language while preserving the source scene.
+
+For the tested style-transfer example, copy `Qwen_image_2.1_00002.png` from `ComfyUI_source\\output` to `ComfyUI_source\\input\\qwen21_style_transfer_source.png`. Download the clean official reference image from the [Studio Ghibli gallery](https://www.ghibli.jp/gallery/kaguyahime006.jpg) to `ComfyUI_source\\input\\qwen21_style_ghibli_reference.jpg`:
+
+```powershell
+curl.exe -L --fail --retry 3 -o .\\ComfyUI_source\\input\\qwen21_style_ghibli_reference.jpg https://www.ghibli.jp/gallery/kaguyahime006.jpg
+```
 
 Load a JSON into ComfyUI by opening it from the Workflows menu or dragging it onto the ComfyUI page. The sample input names are only defaults; replace the `LoadImage` or `LoadImageMask` node values with your own files under `ComfyUI_source\input`.
 

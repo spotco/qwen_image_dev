@@ -8,7 +8,7 @@ Local Qwen Image 2.1 setup for an 8 GB RTX 4060 Laptop GPU on Windows 11.
 - Portable embedded Python/CUDA runtime: `python_embeded`
 - Launcher: `run_comfyui_qwen_image.bat`
 - Workflow: `qwen21_text_to_image_workflow.json`
-- Workflow pack: the four `qwen21_*_workflow.json` files listed below
+- Workflow pack: the six `qwen21_*_workflow.json` files listed below
 - Generated images: `ComfyUI_source\output`
 - Background-removal model: `ComfyUI_source\models\background_removal\birefnet.safetensors`
 
@@ -31,6 +31,7 @@ The launcher intentionally does not use `--lowvram`, `--highvram`, `--gpu-only`,
 - [qwen21_image_combine_workflow.json](qwen21_image_combine_workflow.json) — combine two images; use `<image1>` and `<image2>` in the prompt to control their roles.
 - [qwen21_inpainting_workflow.json](qwen21_inpainting_workflow.json) — Qwen edit candidate plus masked compositing; white in `qwen21_inpaint_mask.png` is regenerated and the original is preserved elsewhere.
 - [qwen21_background_removal_workflow.json](qwen21_background_removal_workflow.json) — native BiRefNet mask plus RGBA PNG output. This workflow requires the documented BiRefNet model.
+- [qwen21_style_transfer_workflow.json](qwen21_style_transfer_workflow.json) — preserve `image1` content while using `image2` as a watercolor animation style reference.
 
 The sample inputs used for validation are local files under `ComfyUI_source\input` and are ignored by Git. Change the `LoadImage`/`LoadImageMask` nodes to use your own images.
 
@@ -42,6 +43,7 @@ The four workflows were loaded and queued through the running ComfyUI UI with Br
 - `Qwen21_image_combine_00001.png`
 - `Qwen21_inpaint_00001.png`
 - `Qwen21_background_removed_00001_.png` (confirmed RGBA with transparency)
+- `Qwen21_style_transfer_00001.png`
 
 ## Fresh-clone setup
 
