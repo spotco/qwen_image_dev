@@ -1,6 +1,7 @@
 # Local ComfyUI installations and generated state.
 ComfyUI_source/
 ComfyUI_windows_portable/
+_rollback/
 input/
 output/
 temp/
